@@ -1,0 +1,133 @@
+---
+title: "Cluster data generation using rbeta"
+author: "Soundarya"
+date: "5/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+Clusters
+```{r}
+### another way to consider, instead of just correlation, we could think
+### of distinct groups or clusters
+x <- 1:4
+
+did <- tibble::tibble(
+  id = x,
+  x1 = c(-2, -2, 2, 2),
+  x2 = c(-2, 2, -2, 2)
+)
+
+did %>% 
+  ggplot(mapping = aes(x = x1, y = x2)) +
+  geom_point(size = 5) +
+  coord_equal() +
+  theme_bw()
+```
+```{r}
+help(rbeta)
+```
+
+
+```{r}
+### standard normals around each cluster
+set.seed(71231)
+x1_a <- rbeta(n = 100,shape1 = 1,shape2 = 30,ncp = 10)
+x2_a <- rbeta(n = 100,shape1 = 1,shape2 = 30,ncp = 10)
+```
+
+```{r}
+### how do we assign groupings?
+set.seed(546123)
+### random cluster assignments
+group_ids <- sample(1:4, size = 100, replace = TRUE)
+
+group_ids
+```
+
+```{r}
+### cluster centers
+centers_x1 <- did$x1
+centers_x2 <- did$x2
+
+x1_results <- x1_a + centers_x1[group_ids]
+
+x2_results <- x2_a + centers_x2[group_ids]
+```
+
+```{r}
+### replicate the centers for each group
+centers_x1
+
+group_ids
+
+centers_x1[group_ids]
+```
+
+```{r}
+### combine the x1 and x2 positions for the randomly generated locations by clusters
+df_clusters <- tibble::tibble(
+  x1 = x1_results,
+  x2 = x2_results,
+  cluster_id = group_ids
+)
+```
+
+```{r}
+df_clusters %>% 
+  ggplot(mapping = aes(x = x1, y = x2)) +
+  geom_point(data = did, size = 6) +
+  geom_text(data = did, mapping = aes(label = id), 
+            color = "white") +
+  geom_point(mapping = aes(color = as.factor(cluster_id))) +
+  ggthemes::scale_color_calc("cluster") +
+  coord_equal() +
+  theme_bw()
+```
+
+```{r}
+### include the original standard normal draws as grey points
+df_clusters %>% 
+  ggplot(mapping = aes(x = x1, y = x2)) +
+  geom_point(data = tibble::tibble(x1 = x1_a, x2 = x2_a),
+             color = "grey", alpha = 0.5) +
+  geom_point(data = did, size = 6) +
+  geom_text(data = did, mapping = aes(label = id), 
+            color = "white") +
+  geom_point(mapping = aes(color = as.factor(cluster_id))) +
+  ggthemes::scale_color_calc("cluster") +
+  coord_equal() +
+  theme_bw()
+```
+
+```{r}
+### separate by the random cluster assignment
+df_clusters %>% 
+  ggplot(mapping = aes(x = x1, y = x2)) +
+  geom_point(data = tibble::tibble(x1 = x1_a, x2 = x2_a, cluster_id = group_ids),
+             color = "grey", alpha = 0.5) +
+  geom_point(data = did, size = 6) +
+  geom_text(data = did, mapping = aes(label = id), 
+            color = "white") +
+  geom_point(mapping = aes(color = as.factor(cluster_id))) +
+  facet_wrap(~cluster_id, labeller = "label_both") +
+  ggthemes::scale_color_calc("cluster") +
+  coord_equal() +
+  theme_bw()
+```
+
+
+
